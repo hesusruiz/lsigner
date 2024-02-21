@@ -45,10 +45,17 @@ func fileMenu(a fyne.App, w fyne.Window) *fyne.Menu {
 	// end of New item and submenus
 	// **************************************
 
+	fileOpenItem := fyne.NewMenuItem("Open...", func() {
+		fmt.Println("Menu New->File")
+		dialog.ShowFileOpen(func(uri fyne.URIReadCloser, err error) {
+			fmt.Println("URI:", uri)
+		}, w)
+	})
+
 	// ***************************************
 	// The top-level File menu item and sub-items
 	// a quit item will be appended to our first (File) menu
-	file := fyne.NewMenu("File", newItem)
+	file := fyne.NewMenu("File", fileOpenItem, newItem)
 
 	// If it is not mobile, add a Settings menu item
 	if device := fyne.CurrentDevice(); !device.IsMobile() && !device.IsBrowser() {
@@ -72,100 +79,77 @@ func fileMenu(a fyne.App, w fyne.Window) *fyne.Menu {
 
 }
 
-// makeMenu creates the main menu bar of the application
-func MakeMenu(a fyne.App, w fyne.Window) *fyne.MainMenu {
+func editMenu(a fyne.App, w fyne.Window) *fyne.Menu {
 
-	newItem := fyne.NewMenuItem("New", nil)
-	checkedItem := fyne.NewMenuItem("Checked", nil)
-	checkedItem.Checked = true
-	disabledItem := fyne.NewMenuItem("Disabled", nil)
-	disabledItem.Disabled = true
-	otherItem := fyne.NewMenuItem("Other", nil)
-	mailItem := fyne.NewMenuItem("Mail", func() { fmt.Println("Menu New->Other->Mail") })
-	mailItem.Icon = theme.MailComposeIcon()
-	otherItem.ChildMenu = fyne.NewMenu("",
-		fyne.NewMenuItem("Project", func() { fmt.Println("Menu New->Other->Project") }),
-		mailItem,
-	)
-
-	fileItem := fyne.NewMenuItem("File", func() { fmt.Println("Menu New->File") })
-	fileItem.Icon = theme.FileIcon()
-	dirItem := fyne.NewMenuItem("Directory", func() { fmt.Println("Menu New->Directory") })
-	dirItem.Icon = theme.FolderIcon()
-	newItem.ChildMenu = fyne.NewMenu("",
-		fileItem,
-		dirItem,
-		otherItem,
-	)
-
-	openSettings := func() {
-		w := a.NewWindow("Fyne Settings")
-		w.SetContent(settings.NewSettings().LoadAppearanceScreen(w))
-		w.Resize(fyne.NewSize(440, 520))
-		w.Show()
-	}
-	settingsItem := fyne.NewMenuItem("Settings", openSettings)
-	settingsShortcut := &desktop.CustomShortcut{KeyName: fyne.KeyComma, Modifier: fyne.KeyModifierShortcutDefault}
-	settingsItem.Shortcut = settingsShortcut
-	w.Canvas().AddShortcut(settingsShortcut, func(shortcut fyne.Shortcut) {
-		openSettings()
-	})
-
+	// Cut
 	cutShortcut := &fyne.ShortcutCut{Clipboard: w.Clipboard()}
 	cutItem := fyne.NewMenuItem("Cut", func() {
 		shortcutFocused(cutShortcut, w)
 	})
 	cutItem.Shortcut = cutShortcut
+
+	// Copy
 	copyShortcut := &fyne.ShortcutCopy{Clipboard: w.Clipboard()}
 	copyItem := fyne.NewMenuItem("Copy", func() {
 		shortcutFocused(copyShortcut, w)
 	})
 	copyItem.Shortcut = copyShortcut
+
+	// Paste
 	pasteShortcut := &fyne.ShortcutPaste{Clipboard: w.Clipboard()}
 	pasteItem := fyne.NewMenuItem("Paste", func() {
 		shortcutFocused(pasteShortcut, w)
 	})
 	pasteItem.Shortcut = pasteShortcut
+
+	// Find
 	performFind := func() { fmt.Println("Menu Find") }
 	findItem := fyne.NewMenuItem("Find", performFind)
-	findItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: fyne.KeyModifierShortcutDefault | fyne.KeyModifierAlt | fyne.KeyModifierShift | fyne.KeyModifierControl | fyne.KeyModifierSuper}
+
+	findItem.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyF, Modifier: fyne.KeyModifierShortcutDefault | fyne.KeyModifierControl}
+
 	w.Canvas().AddShortcut(findItem.Shortcut, func(shortcut fyne.Shortcut) {
 		performFind()
 	})
 
+	// ***************************************
+	// The top-level File menu item and sub-items
+	// a quit item will be appended to our first (File) menu
+	edit := fyne.NewMenu("Edit",
+		cutItem,
+		copyItem,
+		pasteItem,
+		fyne.NewMenuItemSeparator(),
+		findItem)
+
+	return edit
+}
+
+func helpMenu(a fyne.App, w fyne.Window) *fyne.Menu {
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("Documentation", func() {
-			u, _ := url.Parse("https://developer.fyne.io")
+			u, _ := url.Parse("https://dome-marketplace.eu")
 			_ = a.OpenURL(u)
 		}),
 		fyne.NewMenuItem("Support", func() {
-			u, _ := url.Parse("https://fyne.io/support/")
+			u, _ := url.Parse("https://dome-marketplace.eu")
 			_ = a.OpenURL(u)
 		}),
-		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("Sponsor", func() {
-			u, _ := url.Parse("https://fyne.io/sponsor/")
-			_ = a.OpenURL(u)
-		}))
-
-	// a quit item will be appended to our first (File) menu
-	file := fyne.NewMenu("File", newItem, checkedItem, disabledItem)
-	device := fyne.CurrentDevice()
-	if !device.IsMobile() && !device.IsBrowser() {
-		file.Items = append(file.Items, fyne.NewMenuItemSeparator(), settingsItem)
-	}
-
-	// The main menu bar of the application
-	main := fyne.NewMainMenu(
-		fileMenu(a, w),
-		fyne.NewMenu("Edit", cutItem, copyItem, pasteItem, fyne.NewMenuItemSeparator(), findItem),
-		helpMenu,
 	)
-	checkedItem.Action = func() {
-		checkedItem.Checked = !checkedItem.Checked
-		main.Refresh()
-	}
-	return main
+
+	return helpMenu
+}
+
+// makeMenu creates the main menu bar of the application
+func MakeMenu(a fyne.App, w fyne.Window) *fyne.MainMenu {
+
+	// The mainMenuBar menu bar of the application
+	mainMenuBar := fyne.NewMainMenu(
+		fileMenu(a, w),
+		editMenu(a, w),
+		helpMenu(a, w),
+	)
+	return mainMenuBar
 }
 
 func shortcutFocused(s fyne.Shortcut, w fyne.Window) {
