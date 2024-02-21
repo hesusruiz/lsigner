@@ -3,11 +3,13 @@ package menubar
 import (
 	"fmt"
 	"net/url"
+	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 )
 
@@ -45,11 +47,23 @@ func fileMenu(a fyne.App, w fyne.Window) *fyne.Menu {
 	// end of New item and submenus
 	// **************************************
 
+	fd := dialog.NewFileOpen(func(uri fyne.URIReadCloser, err error) {
+		fmt.Println("URI:", uri.URI())
+	}, w)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		fyne.LogError("Could not get current dir", err)
+	}
+	lister, err := storage.ListerForURI(storage.NewFileURI(wd))
+	if err != nil {
+		fyne.LogError("Could not create lister for working dir", err)
+	}
+	fd.SetLocation(lister)
+
 	fileOpenItem := fyne.NewMenuItem("Open...", func() {
-		fmt.Println("Menu New->File")
-		dialog.ShowFileOpen(func(uri fyne.URIReadCloser, err error) {
-			fmt.Println("URI:", uri)
-		}, w)
+		fmt.Println("Menu New->File", wd)
+		fd.Show()
 	})
 
 	// ***************************************
