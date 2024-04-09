@@ -106,6 +106,7 @@ func makeTableTab(_ fyne.Window) fyne.CanvasObject {
 			return widget.NewLabel("Cell 000, 000")
 		},
 		func(id widget.TableCellID, cell fyne.CanvasObject) {
+			fmt.Println("populate", id.Row, id.Col)
 			label := cell.(*widget.Label)
 			switch id.Col {
 			case 0:
